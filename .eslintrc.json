@@ -1,0 +1,19 @@
+{
+  "env": {
+    "browser": true,
+    "es6": true
+  },
+  "plugins": [
+    "eslint-plugin-html"
+  ],
+  "extends": [
+    "xbsoftware/javascript",
+    "eslint:recommended"
+  ],
+  "globals": {
+    "webix": "readonly",
+    "$$": "readonly"
+  },
+  "rules": {
+  }
+}
