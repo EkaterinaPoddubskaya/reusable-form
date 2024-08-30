@@ -4,7 +4,6 @@ const userForm = {
   saveAction: () => {
     webix.message('Save button was clicked (original message)');
   },
-  clearAction: () => {},
   width: 400,
   labelWidth: 120
 };

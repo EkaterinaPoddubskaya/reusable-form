@@ -1,52 +1,67 @@
-const getErrorMessage = name => `${name} is defined incorrectly`;
-const getButtonDefaultMessage = name => webix.message(`${name} button was clicked (default message)`);
-
 webix.protoUI({
   name: 'autoForm',
   defaults: {
     labelWidth: 140,
-    saveAction: () => getButtonDefaultMessage('Save'),
-    cancelAction: () => getButtonDefaultMessage('Cancel')
+    getButtonDefaultMessage: name => webix.message(`${name} button was clicked (default message)`),
+    saveAction() { return this.getButtonDefaultMessage('Save'); },
+    cancelAction() { return this.getButtonDefaultMessage('Cancel'); }
   },
-  fields_setter: (value) => {
+
+  getErrorMessage: name => `${name} is defined incorrectly`,
+
+  fields_setter(value) {
     if (!webix.isArray(value)) value = [value];
+    if (!value.length) throw new Error(this.getErrorMessage('fields'));
     for (let i = 0; i < value.length; ++i) {
       if (typeof value[i] !== 'string' || !value[i]) {
-        throw new Error(getErrorMessage('fields'));
+        throw new Error(this.getErrorMessage('fields'));
       }
     }
     return value;
   },
-  saveAction_setter: (value) => {
-    if (typeof value !== 'function') { throw new Error(getErrorMessage('saveAction')); }
+  saveAction_setter(value) {
+    if (typeof value !== 'function') { throw new Error(this.getErrorMessage('saveAction')); }
     return value;
   },
-  cancelAction_setter: (value) => {
-    if (typeof value !== 'function') { throw new Error(getErrorMessage('cancelAction')); }
+  cancelAction_setter(value) {
+    if (typeof value !== 'function') { throw new Error(this.getErrorMessage('cancelAction')); }
     return value;
   },
-  labelWidth_setter: (value) => {
-    if (typeof value !== 'number') { throw new Error(getErrorMessage('labelWidth')); }
+  labelWidth_setter(value) {
+    if (typeof value !== 'number') { throw new Error(this.getErrorMessage('labelWidth')); }
     return value;
   },
 
-  getAutoFormField: (fieldName, labelWidth) => ({
+  getAutoFormField: fieldName => ({
     view: 'text',
     label: fieldName,
     name: fieldName,
-    labelWidth,
-    invalidMessage: `${fieldName} must not be empty`,
-    validate: webix.rules.isNotEmpty
+    invalidMessage: `${fieldName} must not be empty`
   }),
-  getSaveButton: () => ({view: 'button', id: 'saveButton', label: 'Save', css: 'webix_primary'}),
-  getCancelButton: () => ({view: 'button', id: 'cancelButton', label: 'Cancel', css: 'webix_secondary'}),
-  getFormElements(fieldNames, labelWidth) {
-    const fullForm = [{rows: fieldNames.map(name => this.getAutoFormField(name, labelWidth))}];
-    fullForm.push({cols: [this.getCancelButton(), this.getSaveButton()], margin: 15});
+  getSaveButton: formThis => ({
+    view: 'button',
+    id: 'saveButton',
+    label: 'Save',
+    css: 'webix_primary',
+    click() { return formThis.config.saveAction(); }
+  }),
+  getCancelButton: formThis => ({
+    view: 'button',
+    id: 'cancelButton',
+    label: 'Cancel',
+    css: 'webix_secondary',
+    click() { return formThis.config.cancelAction(); }
+  }),
+  getFormElements(config) {
+    const fieldNames = config.fields;
+    const fullForm = fieldNames.map(name => this.getAutoFormField(name));
+    fullForm.push({cols: [this.getCancelButton(this), this.getSaveButton(this)], margin: 15});
     return fullForm;
   },
-  getFormElementsConfig() {
+  getFormElementsConfig(config) {
     return {
+      labelWidth: config.labelWidth || this.defaults.labelWidth,
+      validate: webix.rules.isNotEmpty,
       on: {
         onTimedKeyPress() {
           this.validate();
@@ -56,21 +71,7 @@ webix.protoUI({
   },
 
   $init(config) {
-    if (!config.labelWidth) config.labelWidth = this.defaults.labelWidth;
-    config.elements = this.getFormElements(config.fields, config.labelWidth);
-    config.elementsConfig = this.getFormElementsConfig();
-
-    this.$ready.push(() => {
-      const saveEventId = $$('saveButton').attachEvent('onItemClick', () => {
-        this.config.saveAction();
-      });
-      const cancelEventId = $$('cancelButton').attachEvent('onItemClick', () => {
-        this.config.cancelAction();
-      });
-      this.attachEvent('onDestruct', () => {
-        this.detachEvent(saveEventId); // in case it will be connected to datatable as well
-        this.detachEvent(cancelEventId);
-      });
-    });
+    config.elements = this.getFormElements(config);
+    config.elementsConfig = this.getFormElementsConfig(config);
   }
 }, webix.ui.form);
