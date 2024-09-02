@@ -2,11 +2,11 @@ webix.protoUI({
   name: 'autoForm',
   defaults: {
     labelWidth: 140,
-    getButtonDefaultMessage: name => webix.message(`${name} button was clicked (default message)`),
     saveAction() { return this.getButtonDefaultMessage('Save'); },
     cancelAction() { return this.getButtonDefaultMessage('Cancel'); }
   },
 
+  getButtonDefaultMessage: name => webix.message(`${name} button was clicked (default message)`),
   getErrorMessage: name => `${name} is defined incorrectly`,
 
   fields_setter(value) {
@@ -32,30 +32,34 @@ webix.protoUI({
     return value;
   },
 
+  onSaveButtonClick() {
+    if (!this.validate()) return null;
+    return this.config.saveAction.call(this);
+  },
+  onCancelButtonClick() { return this.config.cancelAction.call(this); },
+
   getAutoFormField: fieldName => ({
     view: 'text',
     label: fieldName,
     name: fieldName,
     invalidMessage: `${fieldName} must not be empty`
   }),
-  getSaveButton: formThis => ({
+  getSaveButton: () => ({
     view: 'button',
-    id: 'saveButton',
     label: 'Save',
     css: 'webix_primary',
-    click() { return formThis.config.saveAction(); }
+    click() { return this.getFormView().onSaveButtonClick(); }
   }),
-  getCancelButton: formThis => ({
+  getCancelButton: () => ({
     view: 'button',
-    id: 'cancelButton',
     label: 'Cancel',
     css: 'webix_secondary',
-    click() { return formThis.config.cancelAction(); }
+    click() { return this.getFormView().onCancelButtonClick(); }
   }),
   getFormElements(config) {
     const fieldNames = config.fields;
     const fullForm = fieldNames.map(name => this.getAutoFormField(name));
-    fullForm.push({cols: [this.getCancelButton(this), this.getSaveButton(this)], margin: 15});
+    fullForm.push({cols: [this.getCancelButton(), this.getSaveButton()], margin: 15});
     return fullForm;
   },
   getFormElementsConfig(config) {
